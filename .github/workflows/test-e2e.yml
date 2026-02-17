@@ -50,10 +50,7 @@ jobs:
 
       - name: Build Task
         run: |
-          docker run --rm \
-            -v $(pwd)/task:/build \
-            -w /build golang:1.25 /bin/bash -c \
-              "CGO_ENABLED=0 go build -ldflags=\"-w -s\" -o task ./cmd/task"
+          cd task; CGO_ENABLED=0 go build -ldflags=\"-w -s\" -o task ./cmd/task
           echo "$(pwd)/task" >> "$GITHUB_PATH"
 
       - name: Run E2E Tests
