@@ -1,3 +1,6 @@
+[![Sync Task Version](https://github.com/trulede/task-e2e/actions/workflows/sync-versions.yml/badge.svg)](https://github.com/trulede/task-e2e/actions/workflows/sync-versions.yml)
+[![Task E2E Test](https://github.com/trulede/task-e2e/actions/workflows/test-e2e.yml/badge.svg)](https://github.com/trulede/task-e2e/actions/workflows/test-e2e.yml)
+
 # Task E2E Test Suite
 
 ## Repo Layout

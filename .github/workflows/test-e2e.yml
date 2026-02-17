@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Task E2E Test
 
 on:
   workflow_dispatch:
@@ -43,10 +43,10 @@ jobs:
             VERSION=${{ github.event.inputs.task_version || steps.cache.outputs.cached_version }}
           fi
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          
+
       - name: Clone Task
         run: |
-          git clone --depth 1 --branch ${{ steps.version.outputs.version }} https://github.com/boschglobal/task.git
+          git clone --depth 1 --branch ${{ steps.version.outputs.version }} https://github.com/go-task/task.git
 
       - name: Build Task
         run: |
