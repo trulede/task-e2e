@@ -1,0 +1,48 @@
+# Test: task init
+task --init
+exists Taskfile.yml
+stdout 'Taskfile created: Taskfile.yml'
+cmp Taskfile.yml expect
+task
+stdout 'Hello, world!'
+
+# Test: taskfile exists, content not modified
+exec sh -c 'echo "foo" > Taskfile.yml'
+! task --init
+exists Taskfile.yml
+stderr 'task: A Taskfile already exists'
+exec cat Taskfile.yml
+stdout 'foo'
+
+# Test: task init with filename specified
+task --init foo.yaml
+exists foo.yaml
+stdout 'Taskfile created: foo.yaml'
+cmp foo.yaml expect
+task -t foo.yaml
+stdout 'Hello, world!'
+
+# Test: task init with filename in directory
+mkdir foo
+task --init foo/bar.yml
+exists foo/bar.yml
+stdout 'Taskfile created: foo/bar.yml'
+cmp foo/bar.yml expect
+task -t foo/bar.yml
+stdout 'Hello, world!'
+
+
+-- expect --
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+vars:
+  GREETING: Hello, world!
+
+tasks:
+  default:
+    desc: Print a greeting message
+    cmds:
+      - echo "{{.GREETING}}"
+    silent: true

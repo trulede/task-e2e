@@ -1,0 +1,72 @@
+name: Sync Task Version
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-latest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest Task release
+        id: latest
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/go-task/task/releases/latest | jq -r '.tag_name')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+          echo "Latest Task version: ${LATEST}"
+
+      - name: Check version cache
+        id: cache
+        run: |
+          if [ -f .task-version ]; then
+            CACHED_VERSION=$(cat .task-version)
+            echo "cached_version=${CACHED_VERSION}" >> $GITHUB_OUTPUT
+            echo "Cached Task version: ${CACHED_VERSION}"
+          else
+            echo "cached_version=" >> $GITHUB_OUTPUT
+            echo "No cached version found"
+          fi
+
+      - name: Update version cache and trigger build
+        if: steps.cache.outputs.cached_version != steps.latest.outputs.version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            fs.writeFileSync('.task-version', '${{ steps.latest.outputs.version }}');
+            
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'test-e2e.yml',
+              ref: 'main',
+              inputs: {
+                task_version: '${{ steps.latest.outputs.version }}'
+              }
+            });
+            
+            console.log('Version changed - build triggered');
+
+      - name: Commit cache update if version changed
+        if: steps.cache.outputs.cached_version != steps.latest.outputs.version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            try {
+              execSync('git config --global user.email "github-actions[bot]@users.noreply.github.com"');
+              execSync('git config --global user.name "github-actions[bot]"');
+              execSync('git add .task-version');
+              execSync('git commit -m "chore: update cached Task version to ${{ steps.latest.outputs.version }}"');
+              execSync('git push');
+            } catch (error) {
+              console.log('No changes to commit or push failed:', error.message);
+            }

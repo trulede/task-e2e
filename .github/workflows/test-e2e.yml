@@ -1,0 +1,62 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_version:
+        description: 'Task version to build'
+        required: true
+        default: 'main'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: task
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check version cache
+        id: cache
+        run: |
+          if [ -f .task-version ]; then
+            CACHED_VERSION=$(cat .task-version)
+            echo "cached_version=${CACHED_VERSION}" >> $GITHUB_OUTPUT
+            echo "Cached Task version: ${CACHED_VERSION}"
+          else
+            echo "cached_version=main" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=${{ github.event.inputs.task_version || steps.cache.outputs.cached_version }}
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          
+      - name: Clone Task
+        run: |
+          git clone --depth 1 --branch ${{ steps.version.outputs.version }} https://github.com/boschglobal/task.git
+
+      - name: Build Task
+        run: |
+          docker run --rm \
+            -v $(pwd)/task:/build \
+            -w /build golang:1.25 /bin/bash -c \
+              "CGO_ENABLED=0 go build -ldflags=\"-w -s\" -o task ./cmd/task"
+          echo "$(pwd)/task" >> "$GITHUB_PATH"
+
+      - name: Run E2E Tests
+        run: |
+          make test 
+    
