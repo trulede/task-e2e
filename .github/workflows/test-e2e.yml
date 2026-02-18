@@ -5,8 +5,8 @@ on:
     inputs:
       task_version:
         description: 'Task version to build'
-        required: true
-        default: 'main'
+        required: false
+        default: ''
 
 env:
   REGISTRY: ghcr.io
