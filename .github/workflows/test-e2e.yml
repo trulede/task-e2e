@@ -58,6 +58,8 @@ jobs:
           make info
 
       - name: Run E2E Tests
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           make test 
     
