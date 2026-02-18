@@ -20,6 +20,8 @@ task-e2e
 
 ## Usage
 
+### Running Tests
+
 ```bash
 # Install Task (install to a directory in your PATH).
 $ sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
@@ -32,6 +34,28 @@ $ cd task-e2e
 $ make test
 ```
 
+
+### Writing Tests
+
+Test are written in `Testscript` and saved in `txtar` files. Place new tests in a subdirectory of the `tests` directory, using the sub-directory structure to organize tests. The E2E Test will automatically discover and run the new tests.
+
+```testscript
+# Test: task version
+task --version
+cp stdout task.version
+cmpenv task.version expect
+
+-- expect --
+${VERSION}
+```
+
+
+### Testscript Extensions
+
+* <code>task args...</code> - Run Task!
+* <code>sleep duration</code> -  Sleep for the specified duration (e.g. 1s).
+* <code>touch file</code> - Touch the specified file, updating file access time. Create if the file does not exist.
+* <code>[!] filecontains file1 file2|text</code> - Test that file1 contains file2 or the provided text.
 
 ## References
 

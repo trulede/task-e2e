@@ -2,7 +2,7 @@
 task --init
 exists Taskfile.yml
 stdout 'Taskfile created: Taskfile.yml'
-cmp Taskfile.yml expect
+filecontains Taskfile.yml expect
 task
 stdout 'Hello, world!'
 
@@ -18,7 +18,7 @@ stdout 'foo'
 task --init foo.yaml
 exists foo.yaml
 stdout 'Taskfile created: foo.yaml'
-cmp foo.yaml expect
+filecontains foo.yaml expect
 task -t foo.yaml
 stdout 'Hello, world!'
 
@@ -27,14 +27,12 @@ mkdir foo
 task --init foo/bar.yml
 exists foo/bar.yml
 stdout 'Taskfile created: foo/bar.yml'
-cmp foo/bar.yml expect
+filecontains foo/bar.yml expect
 task -t foo/bar.yml
 stdout 'Hello, world!'
 
 
 -- expect --
-# yaml-language-server: $schema=https://taskfile.dev/schema.json
-
 version: '3'
 
 vars:

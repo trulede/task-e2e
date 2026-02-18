@@ -1,0 +1,7 @@
+# Test: task version
+task --version
+cp stdout task.version
+cmpenv task.version expect
+
+-- expect --
+${VERSION}

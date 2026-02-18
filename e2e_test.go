@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -11,41 +12,56 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
-var tests = map[string]string{
-	"CLI":   filepath.Join("tests", "cli"),
-	"Watch": filepath.Join("tests", "watch"),
-}
-
 func TestMain(m *testing.M) {
 	testscript.Main(m, map[string]func(){})
 }
 
 func TestE2E(t *testing.T) {
-	for test, path := range tests {
-		t.Run(test, func(t *testing.T) { runTest(path, t) })
-	}
-}
-
-func runTest(dir string, t *testing.T) {
+	testDir := "tests"
+	curDir := testDir
 	files := []string{}
 	ext := ".txtar"
-	fileSystem := os.DirFS(dir)
+	fileSystem := os.DirFS(testDir)
 	fs.WalkDir(fileSystem, ".", func(s string, d fs.DirEntry, e error) error {
 		if e != nil {
 			return nil
 		}
-		if !d.IsDir() && filepath.Ext(s) == ext {
-			files = append(files, filepath.Join(dir, s))
+		if d.IsDir() {
+			// Run any files from the current dir.
+			if len(files) > 0 {
+				t.Run(curDir, func(t *testing.T) { runTest(files, t) })
+			}
+			// Reset for the next dir.
+			curDir = s
+			files = []string{}
+		} else {
+			if filepath.Ext(s) == ext {
+				files = append(files, filepath.Join(testDir, s))
+			}
 		}
 		return nil
 	})
+	// Run the remaining/last dir/files.
+	if len(files) > 0 {
+		t.Run(curDir, func(t *testing.T) { runTest(files, t) })
+	}
+}
+
+func runTest(files []string, t *testing.T) {
 	testscript.Run(t, testscript.Params{
-		Files: files,
 		Cmds: map[string]func(ts *testscript.TestScript, neg bool, args []string){
 			"task":         task,
 			"sleep":        sleep,
 			"touch":        touch,
 			"filecontains": filecontains,
+		},
+		Files: files,
+		Setup: func(e *testscript.Env) error {
+			var vars = []string{
+				fmt.Sprintf("VERSION=%s", os.Getenv("VERSION")),
+			}
+			e.Vars = append(e.Vars, vars...)
+			return nil
 		},
 	})
 }
@@ -56,10 +72,13 @@ func task(ts *testscript.TestScript, neg bool, args []string) {
 
 func filecontains(ts *testscript.TestScript, neg bool, args []string) {
 	if len(args) != 2 {
-		ts.Fatalf("filecontains <file> <text>")
+		ts.Fatalf("filecontains <file> <file>|<text>")
 	}
 	got := ts.ReadFile(args[0])
 	want := args[1]
+	if data, err := os.ReadFile(ts.MkAbs(want)); err == nil {
+		want = string(data)
+	}
 	if strings.Contains(got, want) == neg {
 		ts.Fatalf("filecontains %q; %q not found in file:\n%q", args[0], want, got)
 	}
