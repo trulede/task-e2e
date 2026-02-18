@@ -37,12 +37,9 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-          else
-            VERSION=${{ github.event.inputs.task_version || steps.cache.outputs.cached_version }}
-          fi
+          VERSION=${{ github.event.inputs.task_version || steps.cache.outputs.cached_version }}
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION#v}" >> $GITHUB_ENV
 
       - name: Clone Task
         run: |
@@ -58,8 +55,6 @@ jobs:
           make info
 
       - name: Run E2E Tests
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           make test 
     
