@@ -1,0 +1,29 @@
+env HOME=$TMPDIR
+env IMAGE_NAME=task-e2e-taskfile-owner:test
+env TASK_VERSION=v3.48.0
+
+# Build docker image
+exec docker build --build-arg TASK_VERSION=$TASK_VERSION --tag $IMAGE_NAME .
+
+# Test: task init
+exec docker run --rm $IMAGE_NAME --version 
+exec docker run --rm --volume $WORK:/work $IMAGE_NAME 
+stdout 'foobar'
+
+
+-- Taskfile.yml --
+version: '3'
+tasks:
+  default:
+    cmds:
+      - echo "foobar"
+
+-- Dockerfile --
+FROM golang AS task-builder
+ARG TASK_VERSION=main
+WORKDIR /build
+RUN git clone https://github.com/go-task/task.git . && \
+    git checkout ${TASK_VERSION} && \
+    CGO_ENABLED=0 go build -ldflags="-w -s" -o task ./cmd/task
+WORKDIR /work
+ENTRYPOINT ["/build/task"]
